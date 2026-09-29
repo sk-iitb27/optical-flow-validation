@@ -279,162 +279,8 @@ g_time_tt = (
 # Apply the separable Gaussian filters
 # ------------------------------------------------------------
 
-from scipy.ndimage import convolve1d
-from scipy.ndimage import convolve
-
-# # Gaussian smoothing in x
-
-# G = convolve1d(
-#     frames,
-#     g_space,
-#     axis=2,
-#     mode="reflect"
-# )
-# ### note that the paper does not tell us about the boundry frames how to convolve there...
-
-# # Gaussian smoothing in y
-
-# G = convolve1d(
-#     G,
-#     g_space,
-#     axis=1,
-#     mode="reflect"
-# )
 
 
-# # Gaussian smoothing in time
-
-# G = convolve1d(
-#     G,
-#     g_time,
-#     axis=0,
-#     mode="reflect"
-# )
-
-
-# ------------------------------------------------------------
-# Second derivative with respect to x
-# ------------------------------------------------------------
-
-# G_xx = convolve1d(
-#     frames,
-#     g_space_xx,
-#     axis=2,
-#     mode="reflect"
-# )
-
-# G_xx = convolve1d(
-#     G_xx,
-#     g_space,
-#     axis=1,
-#     mode="reflect"
-# )
-
-# G_xx = convolve1d(
-#     G_xx,
-#     g_time,
-#     axis=0,
-#     mode="reflect"
-# )
-
-
-# # ------------------------------------------------------------
-# # Second derivative with respect to y
-# # ------------------------------------------------------------
-
-# G_yy = convolve1d(
-#     frames,
-#     g_space,
-#     axis=2,
-#     mode="reflect"
-# )
-
-# G_yy = convolve1d(
-#     G_yy,
-#     g_space_xx,
-#     axis=1,
-#     mode="reflect"
-# )
-
-# G_yy = convolve1d(
-#     G_yy,
-#     g_time,
-#     axis=0,
-#     mode="reflect"
-# )
-
-
-# # ------------------------------------------------------------
-# # Second derivative with respect to time
-# # ------------------------------------------------------------
-
-# G_tt = convolve1d(
-#     frames,
-#     g_space,
-#     axis=2,
-#     mode="reflect"
-# )
-
-# G_tt = convolve1d(
-#     G_tt,
-#     g_space,
-#     axis=1,
-#     mode="reflect"
-# )
-
-# G_tt = convolve1d(
-#     G_tt,
-#     g_time_tt,
-#     axis=0,
-#     mode="reflect"
-# )
-
-
-# ============================================================
-# STEP 6: DALEMBERTIAN / MASK RESPONSE
-# ============================================================
-
-# Paper:
-#
-# m(x,y,t) =
-# -( ∇² + (1/u²) ∂²/∂t² ) G(x,y,t)
-#
-# Since:
-#
-# ∇²G = G_xx + G_yy
-#
-# Therefore:
-#
-# S = -(G_xx + G_yy + G_tt/u²)
-
-# S = -(G_xx + G_yy + G_tt / (u ** 2))
-
-# print("Edge signal calculated.")
-#################################################################
-
-
-
-
-
-#################################################################
-# ============================================================
-# STEP 5: CONSTRUCT THE 3-D MASK / KERNEL m
-# ============================================================
-
-# Array ordering:
-#
-# frames[time, y, x]
-#
-# Therefore the 3-D kernels have ordering:
-#
-# (time, y, x)
-
-
-# ------------------------------------------------------------
-# x-second-derivative term
-# ------------------------------------------------------------
-
-# g''(x) * g(y) * g(t)
 
 K_xx = (
     g_time[:, None, None]
@@ -462,11 +308,7 @@ K_yy = (
 
 # g(x) * g(y) * g''(t)
 
-K_tt = (
-    g_time_tt[:, None, None]
-    * g_space[None, :, None]
-    * g_space[None, None, :]
-)
+K_tt = (g_time_tt[:, None, None]* g_space[None, :, None]* g_space[None, None, :])
 
 
 # ============================================================
@@ -487,11 +329,7 @@ K_tt = (
 # m =
 # -(K_xx + K_yy + K_tt/u²)
 
-m = -(
-    K_xx
-    + K_yy
-    + K_tt / (u ** 2)
-)
+m = -(K_xx+K_yy+K_tt / (u ** 2))
 
 print("3-D mask m calculated.")
 
@@ -499,13 +337,10 @@ print("3-D mask m calculated.")
 # ============================================================
 # STEP 7: CONVOLVE THE MASK WITH THE ORIGINAL VIDEO
 # ============================================================
+from scipy.ndimage import convolve1d
+from scipy.ndimage import convolve
 
-
-S = convolve(
-    frames,
-    m,
-    mode="reflect"
-)
+S = convolve(frames, m,mode="reflect")
 
 print("Final edge signal S calculated.")
 
@@ -551,9 +386,7 @@ def find_zero_crossings(S):#it means define a function find_... that takes S as 
 
                 if left * right < 0:
 
-                    zero_crossings.append(
-                        (k, j, i, "x")
-                    )
+                    zero_crossings.append((k, j, i, "x"))
 
 
     # ========================================================
@@ -571,9 +404,7 @@ def find_zero_crossings(S):#it means define a function find_... that takes S as 
 
                 if current * next_value < 0:
 
-                    zero_crossings.append(
-                        (k, j, i, "y")
-                    )
+                    zero_crossings.append((k, j, i, "y"))
 
 
     # ========================================================
@@ -591,9 +422,7 @@ def find_zero_crossings(S):#it means define a function find_... that takes S as 
 
                 if previous * next_value < 0:
 
-                    zero_crossings.append(
-                        (k, j, i, "t")
-                    )
+                    zero_crossings.append((k, j, i, "t"))
 
 
     return zero_crossings
@@ -605,10 +434,7 @@ def find_zero_crossings(S):#it means define a function find_... that takes S as 
 
 zero_crossings = find_zero_crossings(S)
 
-print(
-    "Number of zero-crossing candidates:",
-    len(zero_crossings)
-)
+print("Number of zero-crossing candidates:",len(zero_crossings))
 
 ##################################################################################################################################################
 # ============================================================
@@ -668,9 +494,7 @@ def find_zero_crossings(S, EDGE_DIRECTION):
 
                     if left * right < 0:
 
-                        zero_crossings.append(
-                            (k, j, i, "x")
-                        )
+                        zero_crossings.append((k, j, i, "x"))
 
 
     # ========================================================
@@ -767,8 +591,7 @@ def subpixel_zero_crossing(neighborhood, direction):
         np.arange(-(nt // 2), nt // 2 + 1),
         np.arange(-(ny // 2), ny // 2 + 1),
         np.arange(-(nx // 2), nx // 2 + 1),
-        indexing="ij"
-    )
+        indexing="ij")
 
 
     # --------------------------------------------------------
@@ -872,193 +695,105 @@ print("Number of sub-pixel zero-crossing results:",len(subpixel_results))
 # ============================================================
 # STEP 10: CONSTRUCT EDGE-POSITION / DISPLACEMENT MATRIX
 # ============================================================
-
 T, H, W = S.shape
 
 print("\nConstructing edge-position matrix...")
 
 
-# ============================================================
-# VERTICAL STRUCTURAL EDGE
-# ============================================================
-
 if EDGE_DIRECTION.lower() == "vertical":
 
     # --------------------------------------------------------
-    # For a vertical edge:
+    # VERTICAL EDGE
     #
-    # The edge position is measured along x.
-    #
-    # displacement[row, time]
+    # Edge position is measured along x.
+    # Rows    -> original y-positions
+    # Columns -> time
     # --------------------------------------------------------
 
-    displacement = np.full((H, T),np.nan)
+    # Temporary full ROI matrix
+    displacement = np.full((H, T), np.nan)
 
-
-    # --------------------------------------------------------
-    # Process the zero-crossing results obtained from
-    # Steps 8 and 9
-    # --------------------------------------------------------
-
+    # Fill detected sub-pixel edge positions
     for k, j, i, direction, offset in subpixel_results:
 
-        # Make sure this is an x-direction crossing
         if direction != "x":
             continue
 
-        # Make sure the offset is valid
         if not np.isfinite(offset):
             continue
 
-        # ----------------------------------------------------
-        # Convert sub-pixel offset into actual edge position
-        #
-        # i      -> integer pixel position
-        # offset -> sub-pixel correction
-        # ----------------------------------------------------
-
+        # Sub-pixel x-position of the edge
         position = i + offset
 
+        # Store:
+        # j -> spatial y-position
+        # k -> time
+        displacement[j, k] = position
 
-        # ----------------------------------------------------
-        # Store the edge position
-        #
-        # If more than one crossing occurs for the same
-        # row and time, keep the strongest crossing.
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # Remove spatial positions where NO edge was detected
+    # during the entire video
+    # --------------------------------------------------------
 
-        if np.isnan(displacement[j, k]):
+    valid_positions = np.any(np.isfinite(displacement),axis=1)
 
-            displacement[j, k] = position
+    # Compact measurement matrix
+    Dv = displacement[valid_positions, :]
 
-        else:
+    # Retain original y-positions
+    spatial_positions = np.where(valid_positions)[0]
 
-            # Existing edge position
-            existing_position = displacement[j, k]
+    print("Edge-position matrix constructed.")
+    print("Dv shape:", Dv.shape)
+    print("Number of spatial positions:", len(spatial_positions))
 
-            # Integer locations corresponding to the two
-            # candidate positions
-            c_new = int(round(position))
-            c_old = int(round(existing_position))
-
-            # Make sure both locations are valid
-            if (
-                1 <= c_new < W - 1
-                and 1 <= c_old < W - 1
-            ):
-
-                # Signal at this time and row
-                signal = S[k, j, :]
-
-                # Gradient of new candidate
-                gradient_new = abs(
-                    signal[c_new + 1]
-                    - signal[c_new - 1]
-                )
-
-                # Gradient of existing candidate
-                gradient_old = abs(
-                    signal[c_old + 1]
-                    - signal[c_old - 1]
-                )
-
-                # Keep the stronger crossing
-                if gradient_new > gradient_old:
-
-                    displacement[j, k] = position
-
-
-# ============================================================
-# HORIZONTAL STRUCTURAL EDGE
-# ============================================================
 
 elif EDGE_DIRECTION.lower() == "horizontal":
 
     # --------------------------------------------------------
-    # For a horizontal edge:
+    # HORIZONTAL EDGE
     #
-    # The edge position is measured along y.
-    #
-    # displacement[col, time]
+    # Edge position is measured along y.
+    # Rows    -> original x-positions
+    # Columns -> time
     # --------------------------------------------------------
 
-    displacement = np.full(
-        (W, T),
-        np.nan
-    )
+    # Temporary full ROI matrix
+    displacement = np.full((W, T), np.nan)
 
-
-    # --------------------------------------------------------
-    # Process the zero-crossing results obtained from
-    # Steps 8 and 9
-    # --------------------------------------------------------
-
+    # Fill detected sub-pixel edge positions
     for k, j, i, direction, offset in subpixel_results:
 
-        # Make sure this is a y-direction crossing
         if direction != "y":
             continue
 
-        # Make sure the offset is valid
         if not np.isfinite(offset):
             continue
 
-        # ----------------------------------------------------
-        # Convert sub-pixel offset into actual edge position
-        #
-        # j      -> integer pixel position
-        # offset -> sub-pixel correction
-        # ----------------------------------------------------
-
+        # Sub-pixel y-position of the edge
         position = j + offset
 
+        # Store:
+        # i -> spatial x-position
+        # k -> time
+        displacement[i, k] = position
 
-        # ----------------------------------------------------
-        # Store the edge position
-        #
-        # If more than one crossing occurs for the same
-        # column and time, keep the strongest crossing.
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # Remove spatial positions where NO edge was detected
+    # during the entire video
+    # --------------------------------------------------------
 
-        if np.isnan(displacement[i, k]):
+    valid_positions = np.any(np.isfinite(displacement),axis=1)
 
-            displacement[i, k] = position
+    # Compact measurement matrix
+    Dh = displacement[valid_positions, :]
 
-        else:
+    # Retain original x-positions
+    spatial_positions = np.where(valid_positions)[0]
 
-            # Existing edge position
-            existing_position = displacement[i, k]
-
-            # Integer locations corresponding to the two
-            # candidate positions
-            r_new = int(round(position))
-            r_old = int(round(existing_position))
-
-            # Make sure both locations are valid
-            if (
-                1 <= r_new < H - 1
-                and 1 <= r_old < H - 1
-            ):
-
-                # Signal at this time and column
-                signal = S[k, :, i]
-
-                # Gradient of new candidate
-                gradient_new = abs(
-                    signal[r_new + 1]
-                    - signal[r_new - 1]
-                )
-
-                # Gradient of existing candidate
-                gradient_old = abs(
-                    signal[r_old + 1]
-                    - signal[r_old - 1]
-                )
-
-                # Keep the stronger crossing
-                if gradient_new > gradient_old:
-
-                    displacement[i, k] = position
+    print("Edge-position matrix constructed.")
+    print("Dh shape:", Dh.shape)
+    print("Number of spatial positions:", len(spatial_positions))
 
 
 # ============================================================
@@ -1067,8 +802,363 @@ elif EDGE_DIRECTION.lower() == "horizontal":
 
 else:
 
-    raise ValueError("EDGE_DIRECTION must be " "'vertical' or 'horizontal'")
+    raise ValueError("EDGE_DIRECTION must be 'vertical' or 'horizontal'")
+
+###################################################################################################################################
+# ============================================================
+# Step:11 POST-PROCESSING
+# ============================================================
+# ============================================================
+# IALM FUNCTION
+# ============================================================
+
+def ialm_rpca(D, max_iter=1000, tol=1e-7):
+    """
+    Robust Principal Component Analysis using
+    Inexact Augmented Lagrange Multipliers (IALM).
+
+    Decomposes:
+
+        D = L + E
+
+    where:
+        L -> low-rank noise-free matrix
+        E -> sparse error matrix
+
+    Parameters
+    ----------
+    D : ndarray
+        Measurement matrix (spatial position x time)
+
+    max_iter : int
+        Maximum number of IALM iterations
+
+    tol : float
+        Convergence tolerance
+
+    Returns
+    -------
+    L : ndarray
+        Low-rank matrix
+
+    E : ndarray
+        Sparse error matrix
+    """
+
+    # --------------------------------------------------------
+    # Check input
+    # --------------------------------------------------------
+
+    if not np.all(np.isfinite(D)):
+        raise ValueError("D contains NaN or infinite values. " "IALM requires a complete measurement matrix.")
+
+    D = np.asarray(D, dtype=float)
+
+    m, n = D.shape
+
+    # --------------------------------------------------------
+    # Regularization parameter
+    #
+    # Standard RPCA choice:
+    # lambda = 1 / sqrt(max(m,n))
+    # --------------------------------------------------------
+
+    lam = 1.0 / np.sqrt(max(m, n))
+
+    # --------------------------------------------------------
+    # Initial values
+    # --------------------------------------------------------
+
+    L = np.zeros_like(D)
+    E = np.zeros_like(D)
+    Y = np.zeros_like(D)
+
+    # Initial penalty parameter
+    mu = (m * n) / ( 4.0 * np.sum(np.abs(D)) + 1e-12)
+
+    mu_bar = mu * 1e7
+
+    rho = 1.5
+
+    # --------------------------------------------------------
+    # IALM iterations
+    # --------------------------------------------------------
+
+    for iteration in range(max_iter):
+
+        # ----------------------------------------------------
+        # Step 1:
+        # Singular Value Thresholding
+        #
+        # Update L
+        # ----------------------------------------------------
+
+        U, singular_values, Vt = np.linalg.svd(D - E + Y / mu,full_matrices=False)
+
+        threshold = 1.0 / mu
+
+        singular_values_thresholded = np.maximum( singular_values - threshold,0)
+
+        L = (U@ np.diag(singular_values_thresholded) @ Vt)
+
+        # ----------------------------------------------------
+        # Step 2:
+        # Soft thresholding
+        #
+        # Update sparse matrix E
+        # ----------------------------------------------------
+
+        temp = D - L + Y / mu
+
+        E = np.sign(temp) * np.maximum( np.abs(temp) - lam / mu, 0)
+
+        # ----------------------------------------------------
+        # Step 3:
+        # Update Lagrange multiplier
+        # ----------------------------------------------------
+
+        residual = D - L - E
+
+        Y = Y + mu * residual
+
+        # ----------------------------------------------------
+        # Step 4:
+        # Increase penalty parameter
+        # ----------------------------------------------------
+
+        mu = min(rho * mu, mu_bar)
+
+        # ----------------------------------------------------
+        # Convergence check
+        # ----------------------------------------------------
+
+        error = (np.linalg.norm(residual, "fro")/ (np.linalg.norm(D, "fro") + 1e-12))
+
+        if error < tol:
+
+            print(f"IALM converged at iteration "f"{iteration + 1}")
+
+            break
+
+    else:
+
+        print( "IALM reached maximum iterations ""without reaching tolerance.")
+
+    return L, E
 
 
-print("Edge-position matrix constructed:",displacement.shape)
+# ============================================================
+# GAUSSIAN SMOOTHING
+# ============================================================
 
+def smooth_displacement(L, WM, WT):
+    """
+    Apply the 2-D Gaussian smoothing described in Section 3.
+
+    Spatial direction -> WM
+    Temporal direction -> WT
+
+    L shape:
+        spatial position x time
+    """
+
+    # --------------------------------------------------------
+    # Convert mask widths to Gaussian standard deviations
+    #
+    # Paper:
+    # wm = 2 * sqrt(2) * sigma
+    #
+    # Therefore:
+    # sigma = wm / (2 * sqrt(2))
+    # --------------------------------------------------------
+
+    sigma_space = WM / (2.0 * np.sqrt(2.0))
+    sigma_time = WT / (2.0 * np.sqrt(2.0))
+
+    # --------------------------------------------------------
+    # 2-D Gaussian smoothing
+    #
+    # axis 0 -> spatial direction
+    # axis 1 -> temporal direction
+    # --------------------------------------------------------
+
+    L_smooth = gaussian_filter( L, sigma=(sigma_space, sigma_time),mode="nearest")
+
+    return L_smooth
+
+
+# ============================================================
+# PROCESS THE MEASUREMENT MATRICES
+# ============================================================
+
+if EDGE_DIRECTION.lower() == "vertical":
+
+    # --------------------------------------------------------
+    # Dv = measured vertical displacement component
+    # --------------------------------------------------------
+
+    print("\nProcessing Dv using RPCA / IALM...")
+
+    L_v, E_v = ialm_rpca(Dv)
+
+    print("Dv shape:", Dv.shape)
+    print("Low-rank Lv shape:", L_v.shape)
+    print("Sparse error Ev shape:", E_v.shape)
+
+    # --------------------------------------------------------
+    # Gaussian smoothing
+    # --------------------------------------------------------
+
+    L_v_smooth = smooth_displacement( L_v,WM,WT)
+
+    print("Smoothed vertical displacement obtained.")
+
+
+elif EDGE_DIRECTION.lower() == "horizontal":
+
+    # --------------------------------------------------------
+    # Dh = measured horizontal displacement component
+    # --------------------------------------------------------
+
+    print("\nProcessing Dh using RPCA / IALM...")
+
+    L_h, E_h = ialm_rpca(Dh)
+
+    print("Dh shape:", Dh.shape)
+    print("Low-rank Lh shape:", L_h.shape)
+    print("Sparse error Eh shape:", E_h.shape)
+
+    # --------------------------------------------------------
+    # Gaussian smoothing
+    # --------------------------------------------------------
+
+    L_h_smooth = smooth_displacement(L_h,WM,WT)
+
+    print("Smoothed horizontal displacement obtained.")
+
+# ============================================================   
+# SELECT LVDT / ACCELEROMETER LOCATION INSIDE ROI
+# ============================================================
+
+sensor_points = []
+
+roi_display = frames[0].copy()
+
+# Convert normalized frame back to 0-255 for display
+roi_display = (roi_display * 255).astype(np.uint8)
+
+
+def select_sensor_point(event, x_click, y_click, flags, param):
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+
+        # Allow only two points:
+        # 1st point -> LVDT
+        # 2nd point -> Accelerometer
+
+        if len(sensor_points) >= 2:
+            return
+
+        sensor_points.append((x_click, y_click))
+
+        # ----------------------------------------------------
+        # Mark the selected point
+        # ----------------------------------------------------
+
+        cv2.circle(roi_display,(x_click, y_click), 5,255,-1)
+
+        # ----------------------------------------------------
+        # Label the point
+        # ----------------------------------------------------
+
+        if len(sensor_points) == 1:
+
+            label = "LVDT"
+
+        else:
+
+            label = "Accelerometer"
+
+        cv2.putText( roi_display, label,(x_click + 8, y_click - 8),cv2.FONT_HERSHEY_SIMPLEX, 0.5,255,1,cv2.LINE_AA)
+
+        cv2.imshow("Select sensor locations",roi_display)
+
+
+cv2.namedWindow("Select sensor locations")
+
+cv2.setMouseCallback("Select sensor locations", select_sensor_point)
+
+
+print("\nSelect sensor locations")
+print("-----------------------")
+print("1. Click the structural point corresponding to the LVDT.")
+print("2. Click the structural point corresponding to the accelerometer.")
+print("3. Press ENTER when finished.")
+
+
+cv2.imshow("Select sensor locations",roi_display)
+
+cv2.waitKey(0)
+
+cv2.destroyAllWindows()
+
+
+# ============================================================
+# PRINT SELECTED SENSOR POINTS
+# ============================================================
+
+print("\nSelected sensor points:")
+print("----------------------")
+
+if len(sensor_points) >= 1:
+
+    print("LVDT          :",sensor_points[0])
+
+if len(sensor_points) >= 2:
+
+    print("Accelerometer :", sensor_points[1])
+
+
+# ============================================================
+# PLOT SELECTED SENSOR LOCATIONS
+# ============================================================
+
+plt.figure(figsize=(10, 6))
+
+plt.imshow( roi_display,
+    cmap="gray",
+    origin="upper"
+)
+
+# ------------------------------------------------------------
+# Plot LVDT location
+# ------------------------------------------------------------
+
+if len(sensor_points) >= 1:
+
+    lvdt_x, lvdt_y = sensor_points[0]
+
+    plt.scatter(lvdt_x,lvdt_y,s=80,marker="o",label="LVDT")
+
+
+# ------------------------------------------------------------
+# Plot accelerometer location
+# ------------------------------------------------------------
+
+if len(sensor_points) >= 2:
+
+    accel_x, accel_y = sensor_points[1]
+
+    plt.scatter( accel_x,accel_y,s=80,marker="x", label="Accelerometer")
+
+
+plt.xlabel("ROI x-coordinate (pixel)")
+plt.ylabel("ROI y-coordinate (pixel)")
+
+plt.title("Selected LVDT and Accelerometer Locations")
+
+plt.legend()
+
+plt.tight_layout()
+
+plt.show()
